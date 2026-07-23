@@ -1,0 +1,23 @@
+model User {
+  id       Int    @id @default(autoincrement())
+  nome     String
+  email    String @unique
+  senha    String
+  papel    String @default("produtor")
+}
+
+model Foco {
+  id        Int      @id @default(autoincrement())
+  lat       Float
+  lng       Float
+  descricao String
+  status    String   @default("novo")
+  criadoEm  DateTime @default(now())
+}
+
+model Abate {
+  id       Int      @id @default(autoincrement())
+  data     DateTime @default(now())
+  lat      Float
+  lng      Float
+}
