@@ -1,6 +1,7 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client'); //importa o PrismaClient do pacote @prisma/client
 const { PrismaPg } = require('@prisma/adapter-pg'); //driver adapter: permite o PrismaClient falar com Postgres via o driver 'pg'
+const authMiddleware = require('../middlewares/auth.middleware'); //importa o middleware de autenticação
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter }); //instancia o objeto PrismaClient, que é usado para interagir com o banco de dados
@@ -16,8 +17,18 @@ router.get('/', async (req, res) => {
     res.json(await prisma.foco.findMany()); //res.send e res.json são iguais, mas para API usa o res.json
 });
 
-router.post('/', async (req, res) => {
-    res.json(await prisma.foco.create({ data: req.body }));
+router.post('/', authMiddleware, async (req, res) => {
+    const foco = await prisma.foco.create({ 
+        data: {
+            lat: req.body.lat,
+            lng: req.body.lng,
+            descricao: req.body.descricao,
+            foto_url: req.body.foto_url,
+            status: req.body.status,
+            criadoPorId: req.user.userId //req.user é definido no authMiddleware, que decodifica o token JWT
+        }
+    });
+    res.status(201).json({foco});
 });
 
 router.get('/:id', async (req,res) => {

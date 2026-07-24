@@ -1,6 +1,7 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
+const authMiddleware = require('../middlewares/auth.middleware');
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -19,9 +20,19 @@ router.get('/:id', async (req, res) => {
     res.json(abate);
 });
 
-router.post('/', async (req, res) => {
-    res.json(await prisma.abate.create({ data: { lat: req.body.lat, lng: req.body.lng } }));
+router.post('/', authMiddleware, async (req, res) => {
+    const abate = await prisma.abate.create({ 
+        data: { lat: req.body.lat, 
+                lng: req.body.lng,
+                data: req.body.data,
+                status_lote: req.body.statusLote,
+                codigo_lote: req.body.codigoLote,
+                cacadorId: req.user.userId,
+            } 
+    });
+    res.status(201).json(abate);
 });
+
 
 router.delete('/:id', async (req, res) => {
     try {
