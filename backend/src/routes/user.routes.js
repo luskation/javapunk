@@ -1,68 +1,22 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
-const { PrismaPg } = require('@prisma/adapter-pg');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
-const prisma = new PrismaClient({ adapter });
+const authMiddleware = require('../middlewares/auth.middleware'); //importa o middleware de autenticação
+const userController = require('../controllers/user.controller');
 
 const router = express.Router();
 
-router.post('/', async (req, res) => {
-    const senha_hash = await bcrypt.hash(req.body.senha, 10);
-    const user = await prisma.user.create({ 
-        data: {
-            nome: req.body.nome,
-            email: req.body.email,
-            senha_hash: senha_hash,
-            papel: req.body.papel,
-        }
-    });
-    const { senha_hash: descartado, ...userSemSenha } = user;
-    res.status(201).json(userSemSenha);
-});
+// Rota enxuta: só mapeia HTTP + caminho pro controller certo. Cadastro e
+// login ficam públicos (de propósito) — ninguém tem token antes de existir
+// ou de logar, então authMiddleware não faz sentido nessas duas.
+router.post('/', userController.createUser); //Rota para criar usuário
 
-router.post('/login', async (req, res) => {
-    const user = await prisma.user.findUnique({ where: { email: req.body.email } });
-    if (!user) {
-        return res.status(401).json({message: 'Usuário ou senha não encontrados ou incorretos'});
-    } else {
-        const senhaCorreta = await bcrypt.compare(req.body.senha, user.senha_hash);
-        if (!senhaCorreta) {
-            return res.status(401).json({message: 'Usuário ou senha não encontrados ou incorretos'});
-        }
-        const token = jwt.sign({ userId: user.id, papel: user.papel }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.json({ message: 'Login bem-sucedido', token });
-    }
-});
+router.post('/login', userController.login); //Rota para fazer login
 
-router.get ('/', async (req, res) => {
-    res.json(await prisma.user.findMany()); 
-});
+router.get ('/', userController.getAllUsers); // Rota para buscar todos os usuários
 
-router.get('/:id', async (req, res) => {
-    const user = await prisma.user.findUnique({ where: { id: parseInt(req.params.id) } });
-    if (!user) {
-        return res.status(404).json({message: 'Usuário não encontrado'});
-    }
-    res.json(user);
-});
+router.get('/:id', userController.getUserById); // Rota para buscar um usuário por ID
 
-router.delete('/:id', async (req, res) => {
-    try {
-        res.json(await prisma.user.delete({ where: { id: parseInt(req.params.id) } }));
-    } catch (error) {
-        res.status(404).json({message: 'Usuário não encontrado'});
-    }
-});
+router.delete('/:id', authMiddleware, userController.deleteUserById); // Rota para deletar um usuário por ID, protegida pelo middleware de autenticação
 
-router.put('/:id', async (req, res) => {
-    try {
-        res.json(await prisma.user.update({ where: { id: parseInt(req.params.id) }, data: req.body }));
-    } catch (error) {
-        res.status(404).json({message: 'Usuário não encontrado'});
-    }
-});
+router.put('/:id', authMiddleware, userController.updateUserById); //Rota para atualizar um usuário por ID, protegio pelo middleware
 
 module.exports = router;

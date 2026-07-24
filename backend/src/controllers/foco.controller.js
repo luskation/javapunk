@@ -30,7 +30,7 @@ async function deleteFoco(req, res) {
         await focoService.deletarFoco(parseInt(req.params.id));
         res.status(204).send();
     } catch (error) {
-        res.status(404).json({ message: 'Foco não encontrado' });
+        res.status(404).json({ error: 'Foco não encontrado' });
     }
 }
 
