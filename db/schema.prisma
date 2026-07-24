@@ -6,26 +6,55 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Papel {
+  cacador
+  produtor
+  admin
+}
+
+enum StatusFoco {
+  novo
+  em_atendimento
+  resolvido
+}
+
+enum StatusLote {
+  pendente_inspecao
+  liberado
+}
+
 model User {
-  id       Int    @id @default(autoincrement())
-  nome     String
-  email    String @unique
-  senha    String
-  papel    String @default("produtor")
+  id            Int       @id @default(autoincrement())
+  nome          String
+  email         String    @unique
+  senha_hash    String
+  papel         Papel
+  focos         Foco[]
+  abates        Abate[]
 }
 
 model Foco {
-  id        Int      @id @default(autoincrement())
-  lat       Float
-  lng       Float
-  descricao String
-  status    String   @default("novo")
-  criadoEm  DateTime @default(now())
+  id          Int           @id @default(autoincrement())
+  lat         Float
+  lng         Float
+  descricao   String
+  foto_url    String
+  status      StatusFoco
+  criadoPor   User          @relation(fields:[criadoPorId], references: [id])
+  criadoPorId Int
+  criadoEm    DateTime      @default(now())
+  abates      Abate[]
 }
 
 model Abate {
-  id       Int      @id @default(autoincrement())
-  data     DateTime @default(now())
-  lat      Float
-  lng      Float
+  id            Int      @id @default(autoincrement())
+  cacador       User     @relation (fields: [cacadorId], references: [id])
+  cacadorId     Int 
+  foco          Foco?     @relation (fields: [focoId], references: [id])
+  focoId        Int?
+  data          DateTime @default(now())
+  lat           Float
+  lng           Float
+  status_lote   StatusLote
+  codigo_lote   String
 }
