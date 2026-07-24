@@ -1,60 +1,17 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client'); //importa o PrismaClient do pacote @prisma/client
-const { PrismaPg } = require('@prisma/adapter-pg'); //driver adapter: permite o PrismaClient falar com Postgres via o driver 'pg'
 const authMiddleware = require('../middlewares/auth.middleware'); //importa o middleware de autenticação
+const focoController = require('../controllers/foco.controller'); //importa o controller de foco
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
-const prisma = new PrismaClient({ adapter }); //instancia o objeto PrismaClient, que é usado para interagir com o banco de dados
-// express.Router() cria um conjunto de rotas isolado deste recurso ('focos').
-// Ele só vira útil de verdade quando alguém faz app.use('/prefixo', router)
-// lá no app.js — sozinho, esse arquivo não escuta nada.
 const router = express.Router();
 
-// Repare: o caminho aqui é '/', não '/focos'. Esse '/' é relativo ao prefixo
-// que for usado no app.js (hoje '/focos'), então essa rota responde em
-// GET /focos, não em GET /.
-router.get('/', async (req, res) => {
-    res.json(await prisma.foco.findMany()); //res.send e res.json são iguais, mas para API usa o res.json
-});
+router.get('/', focoController.getAll); //delegando a lógica de list para o controller
 
-router.post('/', authMiddleware, async (req, res) => {
-    const foco = await prisma.foco.create({ 
-        data: {
-            lat: req.body.lat,
-            lng: req.body.lng,
-            descricao: req.body.descricao,
-            foto_url: req.body.foto_url,
-            status: req.body.status,
-            criadoPorId: req.user.userId //req.user é definido no authMiddleware, que decodifica o token JWT
-        }
-    });
-    res.status(201).json({foco});
-});
+router.post('/', authMiddleware, focoController.create); //delegando a lógica de create para o controller
 
-router.get('/:id', async (req,res) => {
-    const foco = await prisma.foco.findUnique({ where: { id: parseInt(req.params.id) } });
-    if (!foco) {
-        return res.status(404).json({message: 'Foco não encontrado'});
-    }   
-    res.json(foco);
-});
+router.get('/:id', focoController.getById); //delegando a lógica de getById para o controller
 
-router.put('/:id', async (req, res) => {
-    try {
-        res.json(await prisma.foco.update({where: {id: parseInt(req.params.id)}, data: req.body}));  
-    } catch (error) {
-        res.status(404).json({message: 'Foco não encontrado'});
-    }   
-})
+router.put('/:id', authMiddleware, focoController.updateFoco); //delegando a lógica de update para o controller
 
-router.delete('/:id', async (req, res) => {
-    try {
-        res.json(await prisma.foco.delete({where: {id: parseInt(req.params.id)}}));
-    } catch (error) {
-        res.status(404).json({message: 'Foco não encontrado'});
-    }
-})
-// Sem isso, require('./foco.routes.js') no app.js voltaria um objeto vazio
-// {} (padrão do CommonJS) em vez do router — e app.use() quebraria, porque
-// espera receber uma função (foi exatamente o erro que apareceu antes).
+router.delete('/:id', authMiddleware, focoController.deleteFoco); //delegando a lógica de delete para o controller
+
 module.exports = router;
