@@ -1,53 +1,17 @@
 const express = require('express');
-const { PrismaClient } = require('@prisma/client');
-const { PrismaPg } = require('@prisma/adapter-pg');
-const authMiddleware = require('../middlewares/auth.middleware');
-
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
-const prisma = new PrismaClient({ adapter });
+const authMiddleware = require('../middlewares/auth.middleware'); //importa o middleware de autenticação
+const abateController = require('../controllers/abate.controller'); //importa o controller de abate
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
-    res.json(await prisma.abate.findMany());
-});
+router.get('/', abateController.getAll); //delegando a lógica de list para o controller
 
-router.get('/:id', async (req, res) => {
-    const abate = await prisma.abate.findUnique({ where: { id: parseInt(req.params.id) } });
-    if (!abate) {
-        return res.status(404).json({message: 'Abate não encontrado'});
-    }
-    res.json(abate);
-});
+router.post('/', authMiddleware, abateController.create); //delegando a lógica de create para o controller
 
-router.post('/', authMiddleware, async (req, res) => {
-    const abate = await prisma.abate.create({ 
-        data: { lat: req.body.lat, 
-                lng: req.body.lng,
-                data: req.body.data,
-                status_lote: req.body.statusLote,
-                codigo_lote: req.body.codigoLote,
-                cacadorId: req.user.userId,
-            } 
-    });
-    res.status(201).json(abate);
-});
+router.get('/:id', abateController.getById); //delegando a lógica de getById para o controller
 
+router.put('/:id', authMiddleware, abateController.updateAbate); //delegando a lógica de update para o controller
 
-router.delete('/:id', async (req, res) => {
-    try {
-        res.json(await prisma.abate.delete({ where: { id: parseInt(req.params.id) } }));  
-    } catch (error) {
-        res.status(404).json({message: 'Abate não encontrado'}); 
-    }     
-});
-
-router.put('/:id', async (req, res) => {
-    try {
-        res.json(await prisma.abate.update({ where: { id: parseInt(req.params.id) }, data: { lat: req.body.lat, lng: req.body.lng } }));  
-    } catch (error) {
-        res.status(404).json({message: 'Abate não encontrado'}); 
-    }
-});
+router.delete('/:id', authMiddleware, abateController.deleteAbate); //delegando a lógica de delete para o controller
 
 module.exports = router;
