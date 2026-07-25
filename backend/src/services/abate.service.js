@@ -12,8 +12,12 @@ async function deletarPorId(id) {
     return abateRepository.deleteById(id);
 }
 
-async function criarAbate(dadosDoAbate) {
-    return abateRepository.createAbate(dadosDoAbate);
+async function criarAbate(dadosDoAbate, papelDoUsuario) {
+    if (papelDoUsuario === 'cacador') {
+        return abateRepository.createAbate(dadosDoAbate);
+    } else {
+        return null;
+    }
 }
 
 async function atualizarAbate(id, dadosDoAbate) {

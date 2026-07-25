@@ -19,9 +19,13 @@ async function create(req, res) {
         data: req.body.data,
         status_lote: req.body.statusLote,
         codigo_lote: req.body.codigoLote,
-        cacadorId: req.user.userId
+        cacadorId: req.user.userId,
     };
-    const abate = await abateService.criarAbate(dadosDoAbate);
+    const papelDoUsuario = req.user.papel;
+    const abate = await abateService.criarAbate(dadosDoAbate, papelDoUsuario);
+    if(!abate) {
+        return res.status(403).json ({message: 'Apenas caçadores podem registrar abates'});
+    }
     res.status(201).json(abate);
 }
 
