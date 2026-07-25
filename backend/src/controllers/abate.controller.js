@@ -13,6 +13,15 @@ async function getAll(req, res) {
 }
 
 async function create(req, res) {
+    if (typeof req.body.lat !== 'number' || typeof req.body.lng !== 'number') {
+        return res.status(400).json({ message: 'latitude e longitude aceita apenas numeros' })
+    }
+    if (req.body.statusLote !== 'pendente_inspecao' && req.body.statusLote !== 'liberado') {
+        return res.status(400).json({ message: 'status é pendente de inspeção ou liberado' })
+    }
+    if (!req.body.codigoLote) {
+        return res.status(400).json({ message: 'codigo do lote não pode ser vazio' })
+    }
     const dadosDoAbate = {
         lat: req.body.lat,
         lng: req.body.lng,
